@@ -1,0 +1,8 @@
+# cook your dish here
+t=int(input())
+for _ in range(t):
+    n=int(input())
+    s=str(format(n, 'b'))
+    if(len(s)<8):
+        s="0"*(8-len(s))+s
+    print(s)
