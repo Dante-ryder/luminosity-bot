@@ -1,0 +1,13 @@
+# cook your dish here
+t=int(input())
+for _ in range(t):
+    n=int(input())
+    l=[]
+    for i in range(n):
+        if i%2==0 and i!=0:
+            l.append(i*2)
+        elif i==0:
+            l.append(3)
+        else:
+            l.append(i*i)
+    print(*l)
