@@ -1,0 +1,18 @@
+# cook your dish here
+t=int(input())
+for _ in range(t):
+    n=int(input())
+    l=list(map(int,input().split()))
+    print(*l[::-1])
+    ans=[]
+    for i in l:
+        if l.index(i)%3==0 and l.index(i)!=0:
+            ans.append(i+3)
+    print(*ans)
+    ans=[]
+    for i in l:
+        if l.index(i)%5==0 and l.index(i)!=0:
+            ans.append(i-7)
+    print(*ans)
+    ans=[]
+    print(sum(l[3:8]))
