@@ -1,0 +1,6 @@
+import math
+t=int(input())
+for _ in range(t):
+    l=list(map(int,input().split()))
+    s='{0:.2f}'.format(math.sqrt(((l[2]-l[0])**2)+((l[3]-l[1])**2)))
+    print(f"Distance: {s}")
