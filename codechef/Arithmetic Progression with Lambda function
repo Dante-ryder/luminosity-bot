@@ -1,0 +1,13 @@
+# cook your dish here
+t=int(input())
+for _ in range(t):
+    l=list(map(int,input().split()))
+    ap=[l[0]]
+    for i in range(1,l[2]):
+        ap.append(ap[-1]+l[1])
+    print(*ap)
+    ans=[]
+    for i in ap:
+        ans.append(i*i)
+    print(*ans)
+    print(sum(ans))
