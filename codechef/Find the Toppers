@@ -1,0 +1,19 @@
+t=int(input())
+for _ in range(t):
+    arr={}
+    max=0.0
+    n=int(input())
+    for _ in range(n):
+        key,value=input().split()
+        value=float(value)
+        arr[key]=value
+        if(max<value):
+            max=value
+            
+    
+    
+    ans=[]   
+    for key,value in arr.items():
+        if(value==max):
+            ans.append(key) 
+    print('\n'.join(sorted(ans)))
