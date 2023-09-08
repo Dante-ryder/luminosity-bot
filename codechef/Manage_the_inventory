@@ -1,0 +1,39 @@
+t=int(input())
+for _ in range(t):
+    n1=int(input())
+    dct = {}
+    total=0
+    for _ in range(n1):
+        key,value=input().split(" ")
+        value=int(value)
+        dct[key]=value
+        total+=value
+    n2=int(input())
+    
+    for _ in range(n2):
+        process,material,value=input().split(" ")
+        value=int(value)
+        if(process=="ADD"):
+            if material in dct:
+                dct[material]=dct[material]+value
+                print("UPDATED Item "+material)
+            else:
+                dct[material]=value
+                print("ADDED Item "+material)
+            total+=value
+            
+        elif(process=="DELETE"):
+            if material in dct:
+                if(dct[material]>=value):
+                    dct[material]=dct[material]-value
+                    total-=value
+                    print("DELETED Item "+material)
+                    
+                else:
+                    print("Item "+material+" could not be DELETED")
+            else:
+                print("Item "+material+" does not exist")
+            
+        
+        
+    print("Total Items in Inventory: "+str(total))
