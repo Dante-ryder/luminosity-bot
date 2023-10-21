@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+
+<robot name="swift_big" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:include filename="$(find rotors_description)/urdf/component_snippets.xacro" />
+  <!-- Instantiate swift_big "mechanics" -->
+  <xacro:include filename="$(find rotors_description)/urdf/swift.xacro" />
+    <xacro:include filename="$(find rotors_description)/urdf/whycon_marker_file.xacro"/>
+
+  <!-- Instantiate a controller. -->
+  <xacro:controller_plugin_macro namespace="${namespace}" imu_sub_topic="imu" />
+
+  <xacro:if value="$(arg enable_mavlink_interface)">
+    <!-- Instantiate mavlink telemetry interface. -->
+    <xacro:default_mavlink_interface namespace="${namespace}" imu_sub_topic="imu" rotor_count="4" />
+  </xacro:if>
+
+  <!-- Mount an ADIS16448 IMU. -->
+  <xacro:default_imu namespace="${namespace}" parent_link="${namespace}/base_link" />
+
+  <xacro:camera_macro namespace="${namespace}" parent_link="${namespace}/base_link" camera_suffix="rgb" frame_rate="30"
+      horizontal_fov="0.4" image_width="500" image_height="500" image_format="R8G8B8" min_distance="0.1"
+      max_distance="5" noise_mean="0" noise_stddev="0" enable_visual="false">
+        <box size="0.001 0.05 0.1"/>
+      <origin xyz="0.037 0 0.02" rpy="0 1.570796327 0"/>
+  </xacro:camera_macro>
+ 
+  <xacro:if value="$(arg enable_ground_truth)">
+    <xacro:ground_truth_imu_and_odometry namespace="${namespace}" parent_link="${namespace}/base_link" />
+  </xacro:if>
+
+  <xacro:if value="$(arg enable_logging)">
+    <!-- Instantiate a logger -->
+    <xacro:bag_plugin_macro
+      namespace="${namespace}"
+      bag_file="$(arg log_file)"
+      rotor_velocity_slowdown_sim="${rotor_velocity_slowdown_sim}"
+      wait_to_record_bag="$(arg wait_to_record_bag)" />
+  </xacro:if>
+
+  <xacro:whycon_marker namespace="${namespace}" marker="whycon_marker" marker_width="0.001" marker_radius="0.01"/>
+
+</robot>
+
