@@ -72,9 +72,9 @@ class swift():
 
 		#initial setting of Kp, Kd and ki for [roll, pitch, throttle]. eg: self.Kp[2] corresponds to Kp value in throttle axis
 		#after tuning and computing corresponding PID parameters, change the parameters
-		self.Kp = [5.3, 10.3, 12.379991999999199]
-		self.Ki = [0, 0, 0.060]
-		self.Kd = [10, 20, 400.87479]
+		self.Kp = [5.3, 10.3, 11.179991999999199]
+		self.Ki = [0, 0, 0.04800401758]
+		self.Kd = [10, 20, 468.87479]
 		
 		
 		#-----------------------Add other required variables for pid here ----------------------------------------------
@@ -209,7 +209,7 @@ class swift():
 	def pid(self, setpoint):
 		if self.alt_error[0] < 0.2 and self.alt_error[0] > -0.2 and self.alt_error[1] < 0.2 and self.alt_error[1] > -0.2 and self.alt_error[2] < 0.2 and self.alt_error[2] > -0.2:
 			self.helper+=1
-			if(self.helper==10 and self.pos<=9):
+			if(self.helper==20 and self.pos<=9):
 				self.pos+=1 #navigate to the next setpoint
 				self.helper = 0
 				rospy.loginfo("pos value : " + str(self.pos<=10))

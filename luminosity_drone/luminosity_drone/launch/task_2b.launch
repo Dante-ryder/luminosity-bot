@@ -28,6 +28,6 @@
   </node>
 
   <node name="spawn_organism" type="spawning" pkg="luminosity_drone"/>
-
+  <node pkg="luminosity_drone" type="life_form_detector.py" name="life_form_detection" output="screen"/>
 </launch>
  

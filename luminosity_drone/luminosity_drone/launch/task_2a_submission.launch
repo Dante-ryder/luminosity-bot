@@ -9,7 +9,7 @@
   <arg name="inner_diameter" default=".20"/>
   <arg name="node_start_delay" default="10.0" />  
   <arg name="duration" default="120"/>
-  <arg name="rec_name" default="LD1122waypoint_navigation.bag"/>
+  <arg name="rec_name" default="LD_1122_waypoint_navigation.bag"/>
 
   <node name="whycon" type="whycon" pkg="whycon" output="screen">
     <param name="targets" value="$(arg targets)"/>
@@ -28,6 +28,6 @@
   <node name="rosbag_record_waypoint_navigation" pkg="rosbag" type="record"
        args="record -O $(find luminosity_drone)/scripts/$(arg rec_name) --duration=$(arg duration) --chunksize=10 /whycon/poses" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
 
-  <node pkg="luminosity_drone" type="LD1122_waypoint_navigation.py" name="waypoint_navigation" output="screen"/>
+  <node pkg="luminosity_drone" type="LD_1122_waypoint_navigation.py" name="waypoint_navigation" output="screen"/>
 </launch>
  
