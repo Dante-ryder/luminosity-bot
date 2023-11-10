@@ -220,21 +220,21 @@ class swift:
             temp.append(i)
         self.visitedsetpoints.append(self.setpoint) 
         if self.opt ==1:
-            temp[0] += 2.25
+            temp[0] += 3
             if temp in self.visitedsetpoints:
-                temp[0] -= 2.25
+                temp[0] -= 3
         elif self.opt == 2:
-            temp[1] += 2.25
+            temp[1] += 3
             if temp in self.visitedsetpoints:
-                temp[1] -= 2.25
+                temp[1] -= 3
         elif self.opt == 3:
-            temp[0] -= 2.25
+            temp[0] -= 3
             if temp in self.visitedsetpoints:
-                temp[0] += 2.25
+                temp[0] += 3
         elif self.opt == 4:
-            temp[1] -= 2.25
+            temp[1] -= 3
             if temp in self.visitedsetpoints:
-                temp[1] += 2.25
+                temp[1] += 3
         print(f"temp : {temp}")
         while temp in self.visitedsetpoints:
             if self.opt <=1:
@@ -242,21 +242,21 @@ class swift:
             self.opt -=1
             print(self.opt)
             if self.opt ==1:
-                temp[0] += 2.25
+                temp[0] += 3
                 if temp in self.visitedsetpoints:
-                    temp[0] -= 2.25
+                    temp[0] -= 3
             elif self.opt == 2:
-                temp[1] += 2.25
+                temp[1] += 3
                 if temp in self.visitedsetpoints:
-                    temp[1] -= 2.25
+                    temp[1] -= 3
             elif self.opt == 3:
-                temp[0] -= 2.25
+                temp[0] -= 3
                 if temp in self.visitedsetpoints:
-                    temp[0] += 2.25
+                    temp[0] += 3
             elif self.opt == 4:
-                temp[1] -= 2.25
+                temp[1] -= 3
                 if temp in self.visitedsetpoints:
-                    temp[1] += 2.25
+                    temp[1] += 3
             if temp[0] >= 6 and temp[0] <= -6 and temp[1] >= 6 and temp[1] <=-6:
                 print('hi')
                 if self.opt >=4:
@@ -291,30 +291,30 @@ class swift:
             # Draw contours on the original image
         cv2.drawContours(cv_image, filtered_contours, -1, (0, 255, 0), 2)
 
-        led_locations = []
+        led_coordinates = []
         for cnt in filtered_contours:
             # Get the centroid of the contour
             M = cv2.moments(cnt)
             if M["m00"] != 0:
                 cx = int(M["m10"] / M["m00"])
                 cy = int(M["m01"] / M["m00"])
-                led_locations.append((cx, cy))
+                led_coordinates.append((cx, cy))
 
             # Draw contours on the original image
             cv2.drawContours(cv_image, [cnt], -1, (0, 255, 0), 2)
 
-        # Display the result
-        # cv2.imshow("Processed Image", cv_image)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
+        # Calculate the centroid of all LEDs
+        if led_coordinates:
+            centroid_x = sum(x for x, _ in led_coordinates) // len(led_coordinates)
+            centroid_y = sum(y for _, y in led_coordinates) // len(led_coordinates)
 
-        # Print LED locations
-        if led_locations:
-            print("Number of white LEDs:", len(led_locations))
-            print("LED locations:", led_locations)
+            # Draw the centroid on the original image
+            cv2.circle(cv_image, (centroid_x, centroid_y), 10, (255, 0, 0), -1)
+
+            # Print the centroid coordinates
+            print("Centroid coordinates (x, y):", (centroid_x, centroid_y))
         else:
-            print("No white LEDs found.")
-
+            print("No LEDs found.")
 
 
 
