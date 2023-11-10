@@ -1,13 +1,41 @@
 #!/usr/bin/env python3
 
+'''
+
+This python file runs a ROS-node of name drone_control which holds the position of Swift-Drone on the given dummy.
+This node publishes and subsribes the following topics:
+
+		PUBLICATIONS			SUBSCRIPTIONS
+		/drone_command			/whycon/poses
+		/alt_error				/pid_tuning_altitude
+		/pitch_error			/pid_tuning_pitch
+		/roll_error				/pid_tuning_roll
+					
+								
+
+Rather than using different variables, use list. eg : self.setpoint = [1,2,3], where index corresponds to x,y,z ...rather than defining self.x_setpoint = 1, self.y_setpoint = 2
+CODE MODULARITY AND TECHNIQUES MENTIONED LIKE THIS WILL HELP YOU GAINING MORE MARKS WHILE CODE EVALUATION.	
+'''
+
+'''
+# Team ID:          < LD-1122 >
+# Theme:            < LUMINOSITY DRONE >
+# Author List:      < YUVARAJ MUNEESHWARAN C, SUKESH T N, MATHINRAJ R, MUKILAN J >
+# Filename:         < life_form_detector.py >
+# Functions:        < >
+# Global variables: < >
+'''
+
+
+#Import all the required pakages
 import rospy
 import numpy as np
 from sensor_msgs.msg import Image
 from luminosity_drone.msg import Biolocation
 import cv2
 import math
+from cv_bridge import CvBridge
 from swift_msgs.msg import *
-from cv_bridge import CvBridge  
 from std_msgs.msg import *
 from imutils import contours
 from skimage import measure
@@ -48,7 +76,7 @@ class swift:
 
         #initial setting of Kp, Kd and ki for [roll, pitch, throttle]. eg: self.Kp[2] corresponds to Kp value in throttle axis
 		#after tuning and computing corresponding PID parameters, change the parameters
-        self.Kp = [7.3, 13.3, 11.179991999999199]
+        self.Kp = [9.3, 15.3, 11.179991999999199]
         self.Ki = [0, 0, 0.04800401758]
         self.Kd = [10, 20, 468.87479]
 
@@ -62,14 +90,6 @@ class swift:
         self.max = 2000
         self.helper = 0
         self.opt = 0
-        #LED DETECTION
-        self.detected_led_center=None
-        self.img=Image
-        self.bridge=CvBridge()
-
-
-
-
 
         # pub;ish /drone_command and errors for analytics purpose /alt_error, /pitch_error and /roll_error
         self.command_pub = rospy.Publisher('/drone_command', swift_msgs, queue_size = 1)
@@ -79,6 +99,9 @@ class swift:
         self.roll_error_pub = rospy.Publisher('/roll_error', Float64, queue_size = 1)
 
         self.loc = Biolocation()
+        self.bridge = CvBridge()
+        self.detected_led_center=None
+        self.img=Image
         
 
         # Subscribing to /whycon/poses, (/pid_tuning_altitude, /pid_tuning_pitch, pid_tuning_roll)=> to tune pid
@@ -127,6 +150,14 @@ class swift:
                 self.opt+=1  #navigate to the next setpoint
                 self.changeposition()
                 
+        # rospy.loginfo("<------####------.")
+        # rospy.loginfo("Throttle : %s",str(self.cmd.rcThrottle))
+        # rospy.loginfo("Error : %s",str(self.alt_error[2]))
+        # rospy.loginfo("Kp : %s",str(self.Kp[2]))
+        # rospy.loginfo("Ki : %s",str(self.Ki[2]))
+        # rospy.loginfo("Kd : %s",str(self.Kd[2]))
+        # rospy.loginfo("<------####------.")
+
 		# for altitude
         self.alt_error[2] = - (self.setpoint[2] - self.drone_position[2])
         self.cmd.rcThrottle = 1550 + int((self.alt_error[2] * self.Kp[2]) + ((self.alt_error[2] - self.prev_alt_error[2]) * self.Kd[2]) + (self.sum_alt_error[2] * self.Ki[2]))
@@ -138,6 +169,13 @@ class swift:
         self.prev_alt_error[2] = self.alt_error[2]
         self.sum_alt_error[2] += self.alt_error[2]
 
+        # rospy.loginfo("<------####------.")
+        # rospy.loginfo("pitch : %s",str(self.cmd.rcPitch))
+        # rospy.loginfo("Error : %s",str(self.alt_error[1]))
+        # rospy.loginfo("Kp : %s",str(self.Kp[1]))
+        # rospy.loginfo("Ki : %s",str(self.Ki[1]))
+        # rospy.loginfo("Kd : %s",str(self.Kd[1]))
+        # rospy.loginfo("<------####------.")
 
 		# for pitch
         self.alt_error[1] =  - (self.setpoint[1] - self.drone_position[1])
@@ -149,6 +187,14 @@ class swift:
         self.pitch_error_pub.publish(self.cmd.rcPitch)
         self.prev_alt_error[1] = self.alt_error[1]
         self.sum_alt_error[1] += self.alt_error[1]
+
+        # rospy.loginfo("<------####------.")
+        # rospy.loginfo("Roll : %s",str(self.cmd.rcRoll))
+        # rospy.loginfo("Error : %s",str(self.alt_error[0]))
+        # rospy.loginfo("Kp : %s",str(self.Kp[0]))
+        # rospy.loginfo("Ki : %s",str(self.Ki[0]))
+        # rospy.loginfo("Kd : %s",str(self.Kd[0]))
+        # rospy.loginfo("<------####------.")
 
         # for roll
         self.alt_error[0] =  (self.setpoint[0] - self.drone_position[0])
@@ -220,137 +266,64 @@ class swift:
             print(f"temp final : {temp}")
         
         self.setpoint=temp
+        
 
-
-    def detect_life_form(self,img):
+    def detect_life_form(self, img):
         try:
-            # Convert the ROS Image message to OpenCV format
-            # cv_image = self.bridge.imgmsg_to_cv2(img, 'bgr8')
-            cv_image = self.bridge.imgmsg_to_cv2(img, desired_encoding="bgr8")
+            cv_image = self.bridge.imgmsg_to_cv2(img, desired_encoding='bgr8')
+            gray_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
 
+            gray_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
+
+            # Apply a binary threshold
         except Exception as e:
             print(e)
             return
+        _, binary_image = cv2.threshold(gray_image, 128, 255, cv2.THRESH_BINARY)
 
-        # Perform image processing to detect the LED
-        self.detected_led_center = self.detect_led(cv_image)
-        if(self.detected_led_center==None):
-            rospy.loginfo("Routing")
-            return False
+            # Find contours in the binary image
+        contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+            # Filter contours based on area (assuming LEDs are small and bright spots)
+        min_contour_area = 50  # Adjust this threshold based on your specific case
+        filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
+
+            # Draw contours on the original image
+        cv2.drawContours(cv_image, filtered_contours, -1, (0, 255, 0), 2)
+
+        led_locations = []
+        for cnt in filtered_contours:
+            # Get the centroid of the contour
+            M = cv2.moments(cnt)
+            if M["m00"] != 0:
+                cx = int(M["m10"] / M["m00"])
+                cy = int(M["m01"] / M["m00"])
+                led_locations.append((cx, cy))
+
+            # Draw contours on the original image
+            cv2.drawContours(cv_image, [cnt], -1, (0, 255, 0), 2)
+
+        # Display the result
+        # cv2.imshow("Processed Image", cv_image)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
+
+        # Print LED locations
+        if led_locations:
+            print("Number of white LEDs:", len(led_locations))
+            print("LED locations:", led_locations)
         else:
-            rospy.loginfo("Detected......")
-            adjust_drone_movement()
-            return True
-        # Adjust drone movement based on the detected LED position
-        # self.adjust_drone_movement(detected_led_center)
-    def detect_led(self,cv_image):
-
-        image = cv_image.copy()
-
-        # image = cv2.imread('image.png')
-        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        blurred_image = cv2.GaussianBlur(gray_image, (11, 11), 0)
-        _, thresholded_image = cv2.threshold(blurred_image, 200, 255, cv2.THRESH_BINARY)
-
-
-        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(thresholded_image, connectivity=8)
-
-        large_components_mask = np.zeros(thresholded_image.shape, dtype=np.uint8)
-
-        min_component_area = 100 
-
-        for label in range(1, num_labels):
-            if label == 0:
-                continue
-
-    # Construct the label mask for the current component
-            label_mask = (labels == label).astype(np.uint8)
-
-    # Count the number of pixels in the current component
-            component_area = stats[label, cv2.CC_STAT_AREA]
-
-    # Check if the component is "large" (greater than the threshold)
-            if component_area > min_component_area:
-        # Add the component to the mask of "large blobs"
-                large_components_mask += label_mask * 255
+            print("No white LEDs found.")
 
 
 
-        contours, _ = cv2.findContours(large_components_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-
-        sorted_contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[0])
-
-        centroid_list = []
-        area_list = []
-        circles = cv2.HoughCircles(gray_image, cv2.HOUGH_GRADIENT, 1, 20,param1=50, param2=30, minRadius=0, maxRadius=0)
-        for i, contour in enumerate(sorted_contours):
-    # Calculate the area of the contour
-            area = cv2.contourArea(contour)
-            radius=math.sqrt(area/math.pi)
-    # Find the centroid of the contour
-            M = cv2.moments(contour)
-            centroid_x = M["m10"] / M["m00"]
-            centroid_y = M["m01"] / M["m00"]
-            # cv2.circle(image, (int(centroid_x), int(centroid_y)), int(radius), (0, 0, 255), 4)
-
-            cv2.putText(image, "x1", (int(centroid_x) - 10, int(centroid_y) - 30), cv2.MARKER_CROSS, 0.5, (0, 0, 255), 2, cv2.LINE_8)
-
-            # cv2.circle(large_components_mask, (int(centroid_x), int(centroid_y)), 5, 255, -1)
-
-    # Append centroid coordinates and area to the respective lists
-            centroid_list.append((centroid_x, centroid_y))
-            area_list.append(area)
-
-
-        # hsv_image=cv2.cvtColor(image,cv2.COLOR_BGR2HSV)
-        # mask=cv2.inRange(hsv_image,np.array([0,0,200]),np.array([255,50,255]))
-        # contours,_=cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-        # if contours:
-        #    largest_contour=max(contours,key=cv2.contourArea)
-        #    M=cv2.moments(largest_contour)
-        #    if M["m00"] !=0:
-        #     centroid_x=int(M["m10"]/M["m00"])     
-        #     centroid_y=int(M["m01"]/M["m00"])  
-        #     cv2.circle(image,(centroid_x,centroid_y),10,(0,255,0),-1)
-
-        rospy.loginfo(f"No. of LEDs detected: {len(centroid_list)}\n")
-        if(len(centroid_list)>=3):
-            return (centroid_x,centroid_y)
-        else:
-            return None
-
-    def adjust_drone_movement(self):
-        if self.detected_led_center is not None:
-            # Center of the image
-            image_center_x = 320
-            image_center_y = 240
-
-            # Calculate the difference between the detected LED position and the image center
-            delta_x = self.detected_led_center[0] - image_center_x
-            delta_y = self.detected_led_center[1] - image_center_y
-
-            # Adjust drone movement commands based on the difference
-            self.cmd.rcThrottle = 1550 + int(0.1 * delta_y)  # Adjust throttle based on the y difference
-
-            # Publish the adjusted movement commands
-            self.command_pub.publish(self.cmd)
-        else:
-            # Stop the drone if the LED is not detected
-            self.cmd.rcThrottle = 1500
-            self.command_pub.publish(self.cmd)
 if __name__=='__main__':
     swift_drone = swift()
     r = rospy.Rate(30)
     # Controller started
     while not rospy.is_shutdown():
         swift_drone.pid()
-        # if swift_drone.detect_life_form():
-        #     rospy.loginfo("Found!!!!! Rerouting")
-        #     swift_drone.adjust_drone_movement()
-        # else:
-
-  
         r.sleep()
     print(swift_drone.visitedsetpoints)
 
