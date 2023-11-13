@@ -56,7 +56,7 @@ class swift:
         self.drone_position = [0.0, 0.0, 0.0]
 
         #set points are set manually to lift the drone high and land it 
-        self.setpoint = [0.0, 0.0, 22.0]
+        self.setpoint = [0.0, 0.0, 23.0]
         self.visitedsetpoints = [[]]
 
 # , [0, 2, 20], [0, 4, 20], [0, -2, 20], [0, -4, 20], [2, 0, 20], [2, 2, 20], 
@@ -76,9 +76,9 @@ class swift:
 
         #initial setting of Kp, Kd and ki for [roll, pitch, throttle]. eg: self.Kp[2] corresponds to Kp value in throttle axis
 		#after tuning and computing corresponding PID parameters, change the parameters
-        self.Kp = [9.3, 15.3, 11.179991999999199]
+        self.Kp = [8, 17.3, 11.179991999999199]
         self.Ki = [0, 0, 0.04800401758]
-        self.Kd = [10, 20, 468.87479]
+        self.Kd = [20, 50, 468.87479]
 
         #errors for pid
         self.alt_error = [0.0, 0.0, 0.0]
@@ -102,7 +102,7 @@ class swift:
         self.bridge = CvBridge()
         self.detected_led_center=None
         self.img=Image
-        
+        self.ledfound = False
 
         # Subscribing to /whycon/poses, (/pid_tuning_altitude, /pid_tuning_pitch, pid_tuning_roll)=> to tune pid
         rospy.Subscriber('whycon/poses', PoseArray, self.whycon_callback)
@@ -123,7 +123,7 @@ class swift:
         self.disarm()
 
         self.cmd.rcRoll = 1500
-        self.cmd.rcYaw = 1500
+        self.cmd.rcYaw = 1590
         self.cmd.rcPitch = 1500
         self.cmd.rcThrottle = 1500
         self.cmd.rcAUX4 = 1500
@@ -134,9 +134,15 @@ class swift:
 
     #whycon_callback func to  update the drone's current position subscribed from /whycon/poses    
     def whycon_callback(self, msg):
+        if self.ledfound:
+            return
         self.drone_position[0] = msg.poses[0].position.x
         self.drone_position[1] = msg.poses[0].position.y
         self.drone_position[2] = msg.poses[0].position.z
+    
+    def setPos(self, msg):
+        self.drone_position[0] = msg[0]
+        self.drone_position[1] = msg[1]
 
     # pid controller for the drone
     def pid(self):
@@ -147,7 +153,10 @@ class swift:
                 if self.opt >=4:
                     self.opt=0
                 rospy.Subscriber('/swift/camera_rgb/image_raw', Image, self.detect_life_form)
-                self.opt+=1  #navigate to the next setpoint
+                self.opt+=1 #navigate to the next setpoint
+                if self.ledfound:
+                    self.disarm()
+                    return 
                 self.changeposition()
                 
         # rospy.loginfo("<------####------.")
@@ -220,21 +229,21 @@ class swift:
             temp.append(i)
         self.visitedsetpoints.append(self.setpoint) 
         if self.opt ==1:
-            temp[0] += 3
+            temp[0] += 3.0
             if temp in self.visitedsetpoints:
-                temp[0] -= 3
+                temp[0] -= 3.0
         elif self.opt == 2:
-            temp[1] += 3
+            temp[1] += 3.0
             if temp in self.visitedsetpoints:
-                temp[1] -= 3
+                temp[1] -= 3.0
         elif self.opt == 3:
-            temp[0] -= 3
+            temp[0] -= 3.0
             if temp in self.visitedsetpoints:
-                temp[0] += 3
+                temp[0] += 3.0
         elif self.opt == 4:
-            temp[1] -= 3
+            temp[1] -= 3.0
             if temp in self.visitedsetpoints:
-                temp[1] += 3
+                temp[1] += 3.0
         print(f"temp : {temp}")
         while temp in self.visitedsetpoints:
             if self.opt <=1:
@@ -242,21 +251,21 @@ class swift:
             self.opt -=1
             print(self.opt)
             if self.opt ==1:
-                temp[0] += 3
+                temp[0] += 3.0
                 if temp in self.visitedsetpoints:
-                    temp[0] -= 3
+                    temp[0] -= 3.0
             elif self.opt == 2:
-                temp[1] += 3
+                temp[1] += 3.0
                 if temp in self.visitedsetpoints:
-                    temp[1] -= 3
+                    temp[1] -= 3.0
             elif self.opt == 3:
-                temp[0] -= 3
+                temp[0] -= 3.0
                 if temp in self.visitedsetpoints:
-                    temp[0] += 3
+                    temp[0] += 3.0
             elif self.opt == 4:
-                temp[1] -= 3
+                temp[1] -= 3.0
                 if temp in self.visitedsetpoints:
-                    temp[1] += 3
+                    temp[1] += 3.0
             if temp[0] >= 6 and temp[0] <= -6 and temp[1] >= 6 and temp[1] <=-6:
                 print('hi')
                 if self.opt >=4:
@@ -276,8 +285,7 @@ class swift:
             gray_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
 
             # Apply a binary threshold
-        except Exception as e:
-            print(e)
+        except Exception:
             return
         _, binary_image = cv2.threshold(gray_image, 128, 255, cv2.THRESH_BINARY)
 
@@ -302,9 +310,10 @@ class swift:
 
             # Draw contours on the original image
             cv2.drawContours(cv_image, [cnt], -1, (0, 255, 0), 2)
-
+        
         # Calculate the centroid of all LEDs
         if led_coordinates:
+            self.ledfound = True
             centroid_x = sum(x for x, _ in led_coordinates) // len(led_coordinates)
             centroid_y = sum(y for _, y in led_coordinates) // len(led_coordinates)
 
@@ -312,9 +321,60 @@ class swift:
             cv2.circle(cv_image, (centroid_x, centroid_y), 10, (255, 0, 0), -1)
 
             # Print the centroid coordinates
-            print("Centroid coordinates (x, y):", (centroid_x, centroid_y))
-        else:
-            print("No LEDs found.")
+            # print("Centroid coordinates (x, y):", (centroid_x, centroid_y))
+            self.setPos([centroid_x, centroid_y])
+            self.alt_error[0], self.alt_error[1]=0, 0
+            self.prev_alt_error[0], self.prev_alt_error[1]=0, 0
+            self.sum_alt_error[0], self.sum_alt_error[1]=0, 0
+            self.drone_position = [centroid_x, centroid_y, self.drone_position[2]]
+            while centroid_x <=229 and centroid_y <=229 or centroid_x>=279 and centroid_y>=279:
+                # for pitch
+                self.alt_error[1] =  -(249 - centroid_y)
+                print(self.drone_position)
+                self.cmd.rcPitch = 1500 + int( 0.1 * self.alt_error[1]) 
+                if (self.cmd.rcPitch > 2000):
+                    self.cmd.rcPitch = 2000
+                if (self.cmd.rcPitch < 1000):
+                    self.cmd.rcPitch = 1000
+                self.pitch_error_pub.publish(self.cmd.rcPitch)
+                self.prev_alt_error[1] = self.alt_error[1]
+                self.sum_alt_error[1] += self.alt_error[1]
+
+                # rospy.loginfo("<------####------.")
+                # rospy.loginfo("Roll : %s",str(self.cmd.rcRoll))
+                # rospy.loginfo("Error : %s",str(self.alt_error[0]))
+                # rospy.loginfo("Kp : %s",str(self.Kp[0]))
+                # rospy.loginfo("Ki : %s",str(self.Ki[0]))
+                # rospy.loginfo("Kd : %s",str(self.Kd[0]))
+                # rospy.loginfo("<------####------.")
+
+                # for roll
+                self.alt_error[0] = (249 - centroid_x)
+                self.cmd.rcRoll = 1500 + int(0.1 * self.alt_error[0])
+                if (self.cmd.rcRoll > 2000):
+                    self.cmd.rcRoll = 2000
+                if (self.cmd.rcRoll < 1000):
+                    self.cmd.rcRoll = 1000
+                self.command_pub.publish(self.cmd)
+                print("Error :", self.alt_error)
+
+                if led_coordinates:
+                    centroid_x = sum(x for x, _ in led_coordinates) // len(led_coordinates)
+                    centroid_y = sum(y for _, y in led_coordinates) // len(led_coordinates)
+
+                    # Draw the centroid on the original image
+                    cv2.circle(cv_image, (centroid_x, centroid_y), 10, (255, 0, 0), -1)
+
+                    # Print the centroid coordinates
+                    print("Centroid coordinates (x, y):", (centroid_x, centroid_y))
+            else:
+                self.ledfound = False
+            if centroid_x >=200 and centroid_y >=200 and centroid_x<=300 and centroid_y<=300:
+                # self.ledfound =False
+                print("fount it")
+                self.setpoint = [11,11,37]
+                
+        
 
 
 
@@ -323,7 +383,8 @@ if __name__=='__main__':
     r = rospy.Rate(30)
     # Controller started
     while not rospy.is_shutdown():
-        swift_drone.pid()
+        if not swift_drone.ledfound:
+            swift_drone.pid()
         r.sleep()
     print(swift_drone.visitedsetpoints)
 
